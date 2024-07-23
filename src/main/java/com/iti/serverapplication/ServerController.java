@@ -25,26 +25,15 @@ public class ServerController implements Initializable {
     private Button stopServerBtn;
     @FXML
     private Label statusText;
-    /*@FXML
-    private TableView<Player> playersTable;*/
+
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        /*TableColumn<Player, String> usernameCol = new TableColumn<>("Player");
-        usernameCol.setCellValueFactory(cellData -> cellData.getValue().usernameProperty());
-
-        TableColumn<Player, Number> pointsCol = new TableColumn<>("Points");
-        pointsCol.setCellValueFactory(cellData -> cellData.getValue().pointsProperty());
-
-        TableColumn<Player, Boolean> onlineCol = new TableColumn<>("Status");
-        onlineCol.setCellValueFactory(cellData -> cellData.getValue().onlineProperty());
-        playersTable.getColumns().addAll(usernameCol,pointsCol,onlineCol);*/
     }
 
     public void loadTableData(){
         try {
-            //  Player.getAll();
-            // playersTable.setItems(Player.playersList);
+
         } catch (Exception ex) {
             ex.printStackTrace();
             Alert a = new Alert(AlertType.ERROR);
@@ -69,8 +58,6 @@ public class ServerController implements Initializable {
             a.showAndWait();
             return;
         }
-        int port = Integer.parseInt(portField.getText());
-        // Server.createServer(port);
         stopServerBtn.setVisible(true);
         startServerBtn.setVisible(false);
         statusText.setTextFill(Color.GREEN);
@@ -79,7 +66,6 @@ public class ServerController implements Initializable {
         loadTableData();
     }
     private void setServerStopped(){
-        //  Server.stop();
         stopServerBtn.setVisible(false);
         startServerBtn.setVisible(true);
         statusText.setTextFill(Color.RED);
