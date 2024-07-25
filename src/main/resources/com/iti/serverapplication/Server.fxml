@@ -70,7 +70,7 @@
             </HBox>
             <HBox alignment="CENTER" spacing="40.0">
                <children>
-                  <TextField fx:id="portField" alignment="CENTER" prefHeight="46.0" prefWidth="194.0" promptText="Port Number" text="3060">
+                  <TextField fx:id="portField" alignment="CENTER" prefHeight="46.0" prefWidth="194.0" promptText="Port Number" text="12345">
                      <font>
                         <Font name="System Bold" size="21.0" />
                      </font>
