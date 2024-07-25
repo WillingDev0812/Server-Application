@@ -31,34 +31,37 @@ public class ServerClientHandler implements Runnable {
             String password;
             boolean success;
 
-            switch (action) {
-                case "login":
-                    email = input.readUTF();
-                    username = input.readUTF();
-                    password = input.readUTF();
-                    System.out.println("Login request - Email: " + email + ", Username: " + username);
-                    success = checkLogin(username, password);
-                    output.writeBoolean(success);
-                    break;
-                case "signup":
-                    username = input.readUTF();
-                    email = input.readUTF();
-                    password = input.readUTF();
-                    System.out.println("Sign-up request - Username: " + username + ", Email: " + email);
-                    success = registerUser(username, email, password);
-                    output.writeBoolean(success);
-                    break;
-                default:
-                    output.writeUTF("Invalid action");
-                    break;
+            try {
+                switch (action) {
+                    case "login":
+                        email = input.readUTF();
+                        username = input.readUTF();
+                        password = input.readUTF();
+                        System.out.println("Login request - Email: " + email + ", Username: " + username);
+                        success = checkLogin(username, password);
+                        output.writeBoolean(success);
+                        break;
+                    case "signup":
+                        username = input.readUTF();
+                        email = input.readUTF();
+                        password = input.readUTF();
+                        System.out.println("Sign-up request - Username: " + username + ", Email: " + email);
+                        success = registerUser(username, email, password);
+                        output.writeBoolean(success);
+                        break;
+                    default:
+                        output.writeUTF("Invalid action");
+                        break;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
 
         } catch (EOFException e) {
             System.err.println("Connection closed unexpectedly: " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (SQLException e) {
-            System.err.println("Database error: " + e.getMessage());
             e.printStackTrace();
         }
     }

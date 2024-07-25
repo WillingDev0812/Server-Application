@@ -14,7 +14,7 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="testDB" uuid="a5f4fbe6-3e53-4143-8246-794c2ce61b57">
+    <data-source source="LOCAL" name="TICTACTOE" uuid="a5f4fbe6-3e53-4143-8246-794c2ce61b57">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>

@@ -16,7 +16,7 @@ public class DatabaseConnectionManager {
         }
 
         if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe?serverTimezone=UTC", "root", "new_password");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe?serverTimezone=UTC", "root", "root");
         }
     }
 
