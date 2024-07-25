@@ -10,6 +10,9 @@ module com.iti.serverapplication {
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
+    requires java.sql;
+    requires mysql.connector.j;
+    requires jbcrypt;
 
     opens com.iti.serverapplication to javafx.fxml;
     exports com.iti.serverapplication;
