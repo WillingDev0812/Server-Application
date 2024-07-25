@@ -26,7 +26,6 @@ public class ServerClientHandler implements Runnable {
             String action = input.readUTF();
             System.out.println("Action received: " + action);
 
-            String username;
             String email;
             String password;
             boolean success;
@@ -34,14 +33,13 @@ public class ServerClientHandler implements Runnable {
             switch (action) {
                 case "login":
                     email = input.readUTF();
-                    username = input.readUTF();
                     password = input.readUTF();
-                    System.out.println("Login request - Email: " + email + ", Username: " + username);
-                    success = checkLogin(username, password);
+                    System.out.println("Login request - Email: " + email);
+                    success = checkLogin(email, password);
                     output.writeBoolean(success);
                     break;
                 case "signup":
-                    username = input.readUTF();
+                    String username = input.readUTF();
                     email = input.readUTF();
                     password = input.readUTF();
                     System.out.println("Sign-up request - Username: " + username + ", Email: " + email);
@@ -63,11 +61,11 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
-    private boolean checkLogin(String username, String password) throws SQLException {
+    private boolean checkLogin(String email, String password) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
+        String query = "SELECT * FROM users WHERE email = ? AND password = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, username);
+            statement.setString(1, email);
             statement.setString(2, password);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next();
@@ -85,5 +83,4 @@ public class ServerClientHandler implements Runnable {
             return statement.executeUpdate() > 0;
         }
     }
-
 }
