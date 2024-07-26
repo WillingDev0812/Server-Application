@@ -19,7 +19,10 @@ public class ServerClientHandler implements Runnable {
     public ServerClientHandler(Socket socket) {
         this.socket = socket;
     }
-    List<String> users = new ArrayList<>();
+
+    record user(String username, String status) {
+    }
+    List<user> users = new ArrayList<>();
     @Override
     public void run() {
         try (DataInputStream input = new DataInputStream(socket.getInputStream());
@@ -41,6 +44,10 @@ public class ServerClientHandler implements Runnable {
                     //System.out.println("Login request - Email: " + email + ", Username: " + username);
                     success = checkLogin(email, password);
                     output.writeBoolean(success);
+                    if(success)
+                    {
+                        updateStatus(email,"online");
+                    }
                     break;
                 case "signup":
                     username = input.readUTF();
@@ -54,13 +61,14 @@ public class ServerClientHandler implements Runnable {
                     // Read email from client before calling getUsernames
                     email = input.readUTF();
                     output.writeUTF(getUsername(email)); //send username to client
-                    getUsernames(email);
+                    this.users = getUsers(email);
                     output.writeInt(users.size());
                     System.out.println(users.size());
                     for(int i=0;i<users.size();i++)
                     {
-                        output.writeUTF(users.get(i));
+                        output.writeUTF(users.get(i).username()+"   "+users.get(i).status());
                     }
+
                     output.flush();
                     break;
                 default:
@@ -89,6 +97,16 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
+    private boolean updateStatus(String email, String status) throws SQLException {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "UPDATE users SET status = ? WHERE email = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, status);
+            statement.setString(2, email);
+            int affectedRows = statement.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
 
     private boolean registerUser(String username, String email, String password) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
@@ -101,21 +119,24 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
-    private void getUsernames(String email) throws SQLException {
+    private List<user> getUsers(String email) throws SQLException {
+        List<user> users = new ArrayList<>();
         Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "SELECT username FROM users WHERE email != ?";
-        System.out.println("a7a"+email);
+        String query = "SELECT *  FROM users WHERE email != ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, email);
             try (ResultSet resultSet = statement.executeQuery()) {
-                users.clear();
                 while (resultSet.next()) {
-                    users.add(resultSet.getString("username"));
+                    String username = resultSet.getString("username");
+                    String status = resultSet.getString("status");
+                    users.add(new user(username,status));
                 }
             }
+            return users;
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return users;
     }
     private String getUsername(String email) {
         String username = "Player"; // Default value
