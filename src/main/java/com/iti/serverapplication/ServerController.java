@@ -1,5 +1,6 @@
 package com.iti.serverapplication;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
@@ -14,11 +15,13 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class ServerController implements Initializable {
@@ -40,6 +43,7 @@ public class ServerController implements Initializable {
 
     private ServerSocket serverSocket;
     private Thread serverThread;
+    private ScheduledExecutorService scheduler;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -47,15 +51,42 @@ public class ServerController implements Initializable {
         statusText.setTextFill(Color.RED);
         statusText.setText("Offline");
         pieChart.setTitle("User Status");
-        updatePieChart();
+        startPieChartUpdates();
+    }
+
+    private void startPieChartUpdates() {
+        scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(this::updatePieChart, 0, 5, TimeUnit.SECONDS);
+    }
+
+    private void stopPieChartUpdates() {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+        }
     }
 
     private void updatePieChart() {
-        PieChart.Data online = new PieChart.Data("Online", 5);
-        PieChart.Data offline = new PieChart.Data("Offline", 15);
+        List<PieChart.Data> pieChartData = new ArrayList<>();
 
-        pieChart.getData().clear(); // Clear existing data
-        pieChart.getData().addAll(online, offline);
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+             PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            while (resultSet.next()) {
+                String status = resultSet.getString("status");
+                int count = resultSet.getInt("count");
+                pieChartData.add(new PieChart.Data(status, count));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // Update on JavaFX Application Thread
+        Platform.runLater(() -> {
+            pieChart.getData().clear(); // Clear existing data
+            pieChart.getData().addAll(pieChartData);
+        });
     }
 
     public void startServer(ActionEvent ae) {
@@ -128,10 +159,12 @@ public class ServerController implements Initializable {
     public void stopServer(ActionEvent ae) {
         setServerStopped();
         updatePieChart();
+        stopPieChartUpdates();
     }
 
     public void exit(ActionEvent ae) {
         setServerStopped();
+        stopPieChartUpdates();
         System.exit(0);
     }
 
@@ -145,26 +178,11 @@ public class ServerController implements Initializable {
     }
 
     public void setAllUsersOffline() {
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
-            String updateQuery = "UPDATE users SET status = 'offline'";
-            preparedStatement = connection.prepareStatement(updateQuery);
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+             PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (preparedStatement != null) {
-                    preparedStatement.close();
-                }
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
     }
 }
