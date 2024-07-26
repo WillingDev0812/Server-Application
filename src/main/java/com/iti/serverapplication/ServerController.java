@@ -1,6 +1,7 @@
 package com.iti.serverapplication;
 
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
@@ -34,6 +35,9 @@ public class ServerController implements Initializable {
     @FXML
     private Label statusText;
 
+    @FXML
+    private PieChart pieChart;
+
     private ServerSocket serverSocket;
     private Thread serverThread;
 
@@ -42,6 +46,16 @@ public class ServerController implements Initializable {
         stopServerBtn.setVisible(false);
         statusText.setTextFill(Color.RED);
         statusText.setText("Offline");
+        pieChart.setTitle("User Status");
+        updatePieChart();
+    }
+
+    private void updatePieChart() {
+        PieChart.Data online = new PieChart.Data("Online", 5);
+        PieChart.Data offline = new PieChart.Data("Offline", 15);
+
+        pieChart.getData().clear(); // Clear existing data
+        pieChart.getData().addAll(online, offline);
     }
 
     public void startServer(ActionEvent ae) {
@@ -73,7 +87,7 @@ public class ServerController implements Initializable {
             statusText.setText("Online");
             portField.setDisable(true);
             showAlert(Alert.AlertType.CONFIRMATION, "Server Started", "Server started successfully");
-
+            updatePieChart();
         } catch (SQLException e) {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "Database connection failed");
             e.printStackTrace();
@@ -113,6 +127,7 @@ public class ServerController implements Initializable {
 
     public void stopServer(ActionEvent ae) {
         setServerStopped();
+        updatePieChart();
     }
 
     public void exit(ActionEvent ae) {
