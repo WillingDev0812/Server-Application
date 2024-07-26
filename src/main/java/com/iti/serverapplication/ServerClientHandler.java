@@ -32,6 +32,8 @@ public class ServerClientHandler implements Runnable {
             System.out.println("Action received: " + action);
 
             String username;
+            String invitedUsername;
+            String invitedStatus;
             String email;
             String password;
             boolean success;
@@ -68,14 +70,18 @@ public class ServerClientHandler implements Runnable {
                     {
                         output.writeUTF(users.get(i).username()+"   "+users.get(i).status());
                     }
-
                     output.flush();
                     break;
                 case "offline":
                     email = input.readUTF();
                     updateStatus(email, "offline");
                     break;
-
+                case "invite":
+                    invitedUsername = input.readUTF();
+                    invitedStatus = userState(invitedUsername);
+                    System.out.println("Online or offline" + invitedStatus);
+                    output.writeUTF(invitedStatus);
+                    break;
                 default:
                     output.writeUTF("Invalid action");
                     break;
@@ -91,6 +97,22 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
+    private String userState(String username) {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "SELECT status FROM users WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, username);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("status");
+                } else {
+                    return "Unknown"; // or handle as needed
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
     private boolean checkLogin(String username, String password) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "SELECT * FROM users WHERE email = ? AND password = ?";
