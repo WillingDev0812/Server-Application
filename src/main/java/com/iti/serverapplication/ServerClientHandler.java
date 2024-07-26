@@ -71,6 +71,11 @@ public class ServerClientHandler implements Runnable {
 
                     output.flush();
                     break;
+                case "offline":
+                    email = input.readUTF();
+                    updateStatus(email, "offline");
+                    break;
+
                 default:
                     output.writeUTF("Invalid action");
                     break;
@@ -137,6 +142,14 @@ public class ServerClientHandler implements Runnable {
             e.printStackTrace();
         }
         return users;
+    }
+    public static void setAllUsersOffline() throws SQLException {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "UPDATE  users SET status = ? ";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, "offline");
+           statement.executeUpdate();
+        }
     }
     private String getUsername(String email) {
         String username = "Player"; // Default value
