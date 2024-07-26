@@ -115,11 +115,12 @@ public class ServerClientHandler implements Runnable {
 
     private boolean registerUser(String username, String email, String password) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+        String query = "INSERT INTO users (username, email, password, status) VALUES (?, ?, ?,?)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, username);
             statement.setString(2, email);
             statement.setString(3, password);
+            statement.setString(4, "Offline");
             return statement.executeUpdate() > 0;
         }
     }
