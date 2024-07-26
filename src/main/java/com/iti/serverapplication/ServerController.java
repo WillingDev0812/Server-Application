@@ -11,12 +11,14 @@ import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
-
-import static com.iti.serverapplication.ServerClientHandler.setAllUsersOffline;
 
 public class ServerController implements Initializable {
 
@@ -33,6 +35,7 @@ public class ServerController implements Initializable {
     private Label statusText;
 
     private ServerSocket serverSocket;
+    private Thread serverThread;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -41,28 +44,28 @@ public class ServerController implements Initializable {
         statusText.setText("Offline");
     }
 
-    public void startServer(ActionEvent ae) throws SQLException {
+    public void startServer(ActionEvent ae) {
         if (portField.getText().isEmpty() || !isValidPort(portField.getText())) {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "The port number is not valid");
             return;
         }
-
         int port = Integer.parseInt(portField.getText());
-
         try {
             DatabaseConnectionManager.connect();
             serverSocket = new ServerSocket(port);
-            new Thread(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
+            serverThread = new Thread(() -> {
+                try {
+                    while (!serverSocket.isClosed()) {
                         new Thread(new ServerClientHandler(serverSocket.accept())).start();
-                    } catch (IOException e) {
-                        if (!serverSocket.isClosed()) {
-                            e.printStackTrace();
-                        }
                     }
+                } catch (SocketException e) {
+                    System.out.println("Server socket closed, stopping server thread.");
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            }).start();
+            });
+            serverThread.start();
+
             setAllUsersOffline();
             stopServerBtn.setVisible(true);
             startServerBtn.setVisible(false);
@@ -80,11 +83,14 @@ public class ServerController implements Initializable {
         }
     }
 
-    private void setServerStopped() throws SQLException {
-        setAllUsersOffline();
+    private void setServerStopped() {
         try {
+            setAllUsersOffline();
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
+            }
+            if (serverThread != null) {
+                serverThread.interrupt();
             }
             DatabaseConnectionManager.disconnect();
             showAlert(Alert.AlertType.CONFIRMATION, "Server Stopped", "Server stopped");
@@ -101,20 +107,16 @@ public class ServerController implements Initializable {
         portField.setDisable(false);
     }
 
-
     private boolean isValidPort(String port) {
         return Pattern.matches("^[0-9]{1,5}$", port) && Integer.parseInt(port) <= 65535;
     }
 
-
-
-    public void stopServer(ActionEvent ae) throws SQLException {
+    public void stopServer(ActionEvent ae) {
         setServerStopped();
     }
 
-    public void exit(ActionEvent ae) throws SQLException {
+    public void exit(ActionEvent ae) {
         setServerStopped();
-        setAllUsersOffline();
         System.exit(0);
     }
 
@@ -125,5 +127,29 @@ public class ServerController implements Initializable {
         alert.setResizable(true);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    public void setAllUsersOffline() {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+            String updateQuery = "UPDATE users SET status = 'offline'";
+            preparedStatement = connection.prepareStatement(updateQuery);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
