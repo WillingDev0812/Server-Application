@@ -16,6 +16,8 @@ import java.sql.SQLException;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
+import static com.iti.serverapplication.ServerClientHandler.setAllUsersOffline;
+
 public class ServerController implements Initializable {
 
     @FXML
@@ -39,7 +41,7 @@ public class ServerController implements Initializable {
         statusText.setText("Offline");
     }
 
-    public void startServer(ActionEvent ae) {
+    public void startServer(ActionEvent ae) throws SQLException {
         if (portField.getText().isEmpty() || !isValidPort(portField.getText())) {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "The port number is not valid");
             return;
@@ -61,7 +63,7 @@ public class ServerController implements Initializable {
                     }
                 }
             }).start();
-
+            setAllUsersOffline();
             stopServerBtn.setVisible(true);
             startServerBtn.setVisible(false);
             statusText.setTextFill(Color.GREEN);
@@ -78,7 +80,8 @@ public class ServerController implements Initializable {
         }
     }
 
-    private void setServerStopped() {
+    private void setServerStopped() throws SQLException {
+        setAllUsersOffline();
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
@@ -105,12 +108,13 @@ public class ServerController implements Initializable {
 
 
 
-    public void stopServer(ActionEvent ae) {
+    public void stopServer(ActionEvent ae) throws SQLException {
         setServerStopped();
     }
 
-    public void exit(ActionEvent ae) {
+    public void exit(ActionEvent ae) throws SQLException {
         setServerStopped();
+        setAllUsersOffline();
         System.exit(0);
     }
 
