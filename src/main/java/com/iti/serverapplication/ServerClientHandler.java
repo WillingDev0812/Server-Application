@@ -23,77 +23,80 @@ public class ServerClientHandler implements Runnable {
     record user(String username, String status) {
     }
     List<user> users = new ArrayList<>();
+
     @Override
     public void run() {
         try (DataInputStream input = new DataInputStream(socket.getInputStream());
              DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
 
-            String action = input.readUTF();
-            System.out.println("Action received: " + action);
+            while (true) {
+                String action = input.readUTF();
+                if (action == null || action.isEmpty()) {
+                    break; // Exit loop if no action is received
+                }
 
-            String username;
-            String invitedUsername;
-            String invitedStatus;
-            String email;
-            String password;
-            boolean success;
+                System.out.println("Action received: " + action);
 
-            switch (action) {
-                case "login":
-                    email = input.readUTF();
-                    //username = input.readUTF();
-                    password = input.readUTF();
-                    //System.out.println("Login request - Email: " + email + ", Username: " + username);
-                    success = checkLogin(email, password);
-                    output.writeBoolean(success);
-                    if(success)
-                    {
-                        updateStatus(email,"online");
-                    }
-                    break;
-                case "signup":
-                    username = input.readUTF();
-                    email = input.readUTF();
-                    password = input.readUTF();
-                    System.out.println("Sign-up request - Username: " + username + ", Email: " + email);
-                    success = registerUser(username, email, password);
-                    output.writeBoolean(success);
-                    break;
-                case "showUsers":
-                    // Read email from client before calling getUsernames
-                    email = input.readUTF();
-                    output.writeUTF(getUsername(email)); //send username to client
-                    this.users = getUsers(email);
-                    output.writeInt(users.size());
-                    System.out.println(users.size());
-                    for(int i=0;i<users.size();i++)
-                    {
-                        output.writeUTF(users.get(i).username()+"   "+users.get(i).status());
-                    }
-                    output.flush();
-                    break;
-                case "offline":
-                    email = input.readUTF();
-                    updateStatus(email, "offline");
-                    break;
-                case "invite":
-                    invitedUsername = input.readUTF();
-                    invitedStatus = userState(invitedUsername);
-                    System.out.println("Online or offline" + invitedStatus);
-                    output.writeUTF(invitedStatus);
-                    break;
-                default:
-                    output.writeUTF("Invalid action");
-                    break;
+                String username;
+                String invitedUsername;
+                String invitedStatus;
+                String email;
+                String password;
+                boolean success;
+
+                switch (action) {
+                    case "login":
+                        email = input.readUTF();
+                        password = input.readUTF();
+                        success = checkLogin(email, password);
+                        output.writeBoolean(success);
+                        if (success) {
+                            updateStatus(email, "online");
+                        }
+                        break;
+                    case "signup":
+                        username = input.readUTF();
+                        email = input.readUTF();
+                        password = input.readUTF();
+                        success = registerUser(username, email, password);
+                        output.writeBoolean(success);
+                        break;
+                    case "showUsers":
+                        email = input.readUTF();
+                        output.writeUTF(getUsername(email)); // send username to client
+                        this.users = getUsers(email);
+                        output.writeInt(users.size());
+                        for (user u : users) {
+                            output.writeUTF(u.username() + "   " + u.status());
+                        }
+                        output.flush();
+                        break;
+                    case "offline":
+                        email = input.readUTF();
+                        updateStatus(email, "offline");
+                        break;
+                    case "invite":
+                        invitedUsername = input.readUTF();
+                        invitedStatus = userState(invitedUsername);
+                        output.writeUTF(invitedStatus);
+                        break;
+                    default:
+                        output.writeUTF("Invalid action");
+                        break;
+                }
             }
-
         } catch (EOFException e) {
             System.err.println("Connection closed unexpectedly: " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("I/O error: " + e.getMessage());
         } catch (SQLException e) {
             System.err.println("Database error: " + e.getMessage());
-            e.printStackTrace();
+        } finally {
+            try {
+                socket.close(); // Ensure the socket is closed properly
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -171,7 +174,7 @@ public class ServerClientHandler implements Runnable {
         String query = "UPDATE  users SET status = ? ";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, "offline");
-           statement.executeUpdate();
+            statement.executeUpdate();
         }
     }
     private String getUsername(String email) {
