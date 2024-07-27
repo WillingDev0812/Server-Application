@@ -128,7 +128,11 @@ public class ServerClientHandler implements Runnable {
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
                             responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
                         }
-
+                        case "getUsername" -> {
+                            String email = (String) requestMap.get("email");
+                            String username = getUsername(email);
+                            responseJson = gson.toJson(new GenericResponse(true, username));
+                        }
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));
                         }
@@ -241,5 +245,28 @@ public class ServerClientHandler implements Runnable {
             e.printStackTrace();
         }
         return "offline";
+    }
+    private String getUsername(String email) {
+        String username = "Player"; // Default value
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = DatabaseConnectionManager.getConnection();
+            String query = "SELECT username FROM users WHERE email = ?"; // Use = for comparison
+            statement = connection.prepareStatement(query);
+            statement.setString(1, email);
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                username = resultSet.getString("username");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return username;
     }
 }

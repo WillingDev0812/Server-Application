@@ -47,11 +47,11 @@ public class ServerController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        startPieChartUpdates();
         stopServerBtn.setVisible(false);
         statusText.setTextFill(Color.RED);
         statusText.setText("Offline");
         pieChart.setTitle("User Status");
-        startPieChartUpdates();
         pieChart.setVisible(false);
     }
 
@@ -69,7 +69,7 @@ public class ServerController implements Initializable {
     private void updatePieChart() {
         List<PieChart.Data> pieChartData = new ArrayList<>();
 
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "new_password");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
              PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
              ResultSet resultSet = preparedStatement.executeQuery()) {
 
@@ -111,6 +111,7 @@ public class ServerController implements Initializable {
                 }
             });
             serverThread.start();
+            updatePieChart();
             pieChart.setVisible(true);
             setAllUsersOffline();
             stopServerBtn.setVisible(true);
@@ -119,7 +120,6 @@ public class ServerController implements Initializable {
             statusText.setText("Online");
             portField.setDisable(true);
             showAlert(Alert.AlertType.CONFIRMATION, "Server Started", "Server started successfully");
-            updatePieChart();
         } catch (SQLException e) {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "Database connection failed");
             e.printStackTrace();
@@ -179,7 +179,7 @@ public class ServerController implements Initializable {
     }
 
     public void setAllUsersOffline() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "new_password");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
              PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
