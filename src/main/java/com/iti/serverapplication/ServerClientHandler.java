@@ -56,8 +56,8 @@ public class ServerClientHandler implements Runnable {
 
     static class InviteRequest {
         private String action;
+        @SerializedName("player")
         private String invitedUsername;
-
         // Getters and Setters
     }
 
@@ -115,9 +115,22 @@ public class ServerClientHandler implements Runnable {
                             responseJson = gson.toJson(new GenericResponse(true, "Status updated to offline"));
                         }
                         case "invite" -> {
+                            for(Socket s : sockets)
+                                System.out.println("the sockets when invite = " +s);
+                            System.out.println("the sockets when invite = " +sockets.size());
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
-                            responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
+                            System.out.println("Invited status: " + invitedStatus);
+                            if(invitedStatus.equals("offline"))
+                                responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
+                            else if (invitedStatus.equals("ingame"))
+                                responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
+                            else {    //case online
+                                responseJson = gson.toJson(new GenericResponse(true, "invite sent "));
+                                for(Socket s : sockets){
+
+                                }
+                            }
                         }
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));

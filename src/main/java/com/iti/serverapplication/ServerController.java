@@ -13,6 +13,7 @@ import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
 import java.sql.*;
@@ -41,6 +42,7 @@ public class ServerController implements Initializable {
     @FXML
     private PieChart pieChart;
 
+    public static List<Socket> sockets = new ArrayList<>();
     private ServerSocket serverSocket;
     private Thread serverThread;
     private ScheduledExecutorService scheduler;
@@ -102,7 +104,9 @@ public class ServerController implements Initializable {
             serverThread = new Thread(() -> {
                 try {
                     while (!serverSocket.isClosed()) {
-                        new Thread(new ServerClientHandler(serverSocket.accept())).start();
+                        Socket clientSocket = serverSocket.accept();
+                        sockets.add(clientSocket);
+                        new Thread(new ServerClientHandler(clientSocket)).start();
                     }
                 } catch (SocketException e) {
                     System.out.println("Server socket closed, stopping server thread.");
@@ -132,6 +136,12 @@ public class ServerController implements Initializable {
     private void setServerStopped() {
         try {
             setAllUsersOffline();
+            for (Socket socket : sockets) {
+                if (!socket.isClosed()) {
+                    socket.close();
+                }
+            }
+            sockets.clear();
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
