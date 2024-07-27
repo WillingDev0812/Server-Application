@@ -13,6 +13,8 @@ module com.iti.serverapplication {
     requires java.sql;
     requires mysql.connector.j;
     requires jbcrypt;
+    requires java.json;
+    requires com.google.gson;
 
     opens com.iti.serverapplication to javafx.fxml;
     exports com.iti.serverapplication;

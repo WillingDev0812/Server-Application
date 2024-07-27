@@ -77,7 +77,7 @@ public class ServerClientHandler implements Runnable {
                         break;
                     case "invite":
                         invitedUsername = input.readUTF();
-                        invitedStatus = userState(invitedUsername);
+                        invitedStatus = getUserStatus(invitedUsername);
                         output.writeUTF(invitedStatus);
                         break;
                     default:
@@ -100,22 +100,34 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
+
+
     private String userState(String username) {
+        System.out.println("Retrieving status for username: " + username);
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "SELECT status FROM users WHERE username = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, username);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    return resultSet.getString("status");
+                    String status = resultSet.getString("status");
+                    System.out.println("Status for " + username + ": " + status);
+                    return status;
                 } else {
-                    return "Unknown"; // or handle as needed
+                    System.out.println("User not found, returning offline");
+                    return "offline";
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+            return "Error";
         }
     }
+
+
+
+
+
     private boolean checkLogin(String username, String password) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "SELECT * FROM users WHERE email = ? AND password = ?";
@@ -127,7 +139,9 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
+
     private boolean updateStatus(String email, String status) throws SQLException {
+        System.out.println("Updating status for email: " + email + " to " + status);
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "UPDATE users SET status = ? WHERE email = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -138,9 +152,12 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
+
+
+
     private boolean registerUser(String username, String email, String password) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "INSERT INTO users (username, email, password, status) VALUES (?, ?, ?,?)";
+        String query = "INSERT INTO users (username, email, password, status) VALUES (?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, username);
             statement.setString(2, email);
@@ -153,30 +170,24 @@ public class ServerClientHandler implements Runnable {
     private List<user> getUsers(String email) throws SQLException {
         List<user> users = new ArrayList<>();
         Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "SELECT *  FROM users WHERE email != ?";
+        String query = "SELECT * FROM users WHERE email != ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, email);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     String username = resultSet.getString("username");
                     String status = resultSet.getString("status");
-                    users.add(new user(username,status));
+                    users.add(new user(username, status));
                 }
             }
-            return users;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return users;
     }
-    public static void setAllUsersOffline() throws SQLException {
-        Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "UPDATE  users SET status = ? ";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, "offline");
-            statement.executeUpdate();
-        }
-    }
+
+
+
     private String getUsername(String email) {
         String username = "Player"; // Default value
         Connection connection = null;
@@ -200,4 +211,41 @@ public class ServerClientHandler implements Runnable {
         }
         return username;
     }
+
+    private String getUserStatus(String invitedUsername) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        String status = "Unknown"; // Default status if the user is not found
+
+        try {
+            // Get the database connection
+            connection = DatabaseConnectionManager.getConnection();
+            // Prepare the SQL query
+            String query = "SELECT username, status FROM users WHERE username = ?";
+            statement = connection.prepareStatement(query);
+            // Set the username parameter
+            statement.setString(1, invitedUsername);
+            // Execute the query
+            resultSet = statement.executeQuery();
+
+            // Process the result
+            if (resultSet.next()) {
+                status = resultSet.getString("status");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle exceptions
+        } finally {
+            // Clean up resources
+            try {
+                if (resultSet != null) resultSet.close();
+                if (statement != null) statement.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return status;
+    }
+
 }

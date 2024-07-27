@@ -16,7 +16,7 @@ public class DatabaseConnectionManager {
         }
 
         if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "new_password");
         }
     }
 
