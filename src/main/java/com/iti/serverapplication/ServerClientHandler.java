@@ -3,21 +3,14 @@ package com.iti.serverapplication;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class ServerClientHandler implements Runnable {
-
     private final Socket socket;
     private final Gson gson = new Gson();
 
@@ -25,22 +18,59 @@ public class ServerClientHandler implements Runnable {
         this.socket = socket;
     }
 
-    record User(String username, String status) {
+    static class User {
+        private String username;
+        private String status;
+
+        public User(String username, String status) {
+            this.username = username;
+            this.status = status;
+        }
+
+        // Getters and Setters
     }
 
-    record LoginRequest(String action, String email, String password) {
+    static class LoginRequest {
+        private String action;
+        private String email;
+        private String password;
+
+        // Getters and Setters
     }
 
-    record SignupRequest(String action, String username, String email, String password) {
+    static class SignupRequest {
+        private String action;
+        private String username;
+        private String email;
+        private String password;
+
+        // Getters and Setters
     }
 
-    record ShowUsersRequest(String action, String email) {
+    static class ShowUsersRequest {
+        private String action;
+        private String email;
+
+        // Getters and Setters
     }
 
-    record InviteRequest(String action, String invitedUsername) {
+    static class InviteRequest {
+        private String action;
+        private String invitedUsername;
+
+        // Getters and Setters
     }
 
-    record GenericResponse(boolean success, String message) {
+    static class GenericResponse {
+        private boolean success;
+        private String message;
+
+        public GenericResponse(boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
+
+        // Getters and Setters
     }
 
     List<User> users = new ArrayList<>();
@@ -60,21 +90,23 @@ public class ServerClientHandler implements Runnable {
                     String responseJson;
                     switch (action) {
                         case "login" -> {
+                            System.out.println("Login");
                             LoginRequest loginRequest = gson.fromJson(requestJson, LoginRequest.class);
-                            boolean success = checkLogin(loginRequest.email(), loginRequest.password());
+                            boolean success = checkLogin(loginRequest.email, loginRequest.password);
                             if (success) {
-                                updateStatus(loginRequest.email(), "online");
+                                updateStatus(loginRequest.email, "online");
                             }
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Login successful" : "Login failed"));
                         }
                         case "signup" -> {
+                            System.out.println("Signup");
                             SignupRequest signupRequest = gson.fromJson(requestJson, SignupRequest.class);
-                            boolean success = registerUser(signupRequest.username(), signupRequest.email(), signupRequest.password());
+                            boolean success = registerUser(signupRequest.username, signupRequest.email, signupRequest.password);
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Signup successful" : "Signup failed"));
                         }
                         case "showUsers" -> {
                             ShowUsersRequest showUsersRequest = gson.fromJson(requestJson, ShowUsersRequest.class);
-                            users = getUsers(showUsersRequest.email());
+                            users = getUsers(showUsersRequest.email);
                             responseJson = gson.toJson(users);
                         }
                         case "offline" -> {
@@ -84,7 +116,7 @@ public class ServerClientHandler implements Runnable {
                         }
                         case "invite" -> {
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
-                            String invitedStatus = getUserStatus(inviteRequest.invitedUsername());
+                            String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
                             responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
                         }
                         default -> {
@@ -93,7 +125,7 @@ public class ServerClientHandler implements Runnable {
                     }
 
                     // Send the response
-                    output.write(responseJson);
+                    output.println(responseJson);
                     output.flush(); // Ensure the response is sent
 
                 } catch (JsonSyntaxException e) {
