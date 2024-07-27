@@ -96,28 +96,37 @@ public class ServerClientHandler implements Runnable {
                             System.out.println("the sockets = " +sockets.size());
                             System.out.println("Login");
                             LoginRequest loginRequest = gson.fromJson(requestJson, LoginRequest.class);
-                            boolean success = checkLogin(loginRequest.email, loginRequest.password);
-                            if (success) {
-                                updateStatus(loginRequest.email, "online");
+                            boolean isRegistered = isEmailRegistered(loginRequest.email);
+                            if (!isRegistered) {
+                                responseJson = gson.toJson(new GenericResponse(false, "Email not registered"));
+                            } else {
+                                boolean success = checkLogin(loginRequest.email, loginRequest.password);
+                                if (success) {
+                                    updateStatus(loginRequest.email, "online");
+                                }
+                                responseJson = gson.toJson(new GenericResponse(success, success ? "Login successful" : "Login failed"));
                             }
-                            responseJson = gson.toJson(new GenericResponse(success, success ? "Login successful" : "Login failed"));
                         }
+
                         case "signup" -> {
                             System.out.println("Signup");
                             SignupRequest signupRequest = gson.fromJson(requestJson, SignupRequest.class);
                             boolean success = registerUser(signupRequest.username, signupRequest.email, signupRequest.password);
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Signup successful" : "Signup failed"));
                         }
+
                         case "showUsers" -> {
                             ShowUsersRequest showUsersRequest = gson.fromJson(requestJson, ShowUsersRequest.class);
                             users = getUsers(showUsersRequest.email);
                             responseJson = gson.toJson(users);
                         }
+
                         case "offline" -> {
                             String email = (String) requestMap.get("email");
-                            updateStatus(email, "offline");
-                            responseJson = gson.toJson(new GenericResponse(true, "Status updated to offline"));
+                            boolean success = updateStatus(email, "offline");
+                            responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to offline" : "Failed to update status"));
                         }
+
                         case "invite" -> {
                             for(Socket s : sockets)
                                 System.out.println("the sockets when invite = " +s);
@@ -136,6 +145,11 @@ public class ServerClientHandler implements Runnable {
                                 }
                             }
                         }
+                        case "getUsername" -> {
+                            String email = (String) requestMap.get("email");
+                            String username = getUsername(email);
+                            responseJson = gson.toJson(new GenericResponse(true, username));
+                        }
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));
                         }
@@ -150,17 +164,36 @@ public class ServerClientHandler implements Runnable {
                     String errorResponse = gson.toJson(new GenericResponse(false, "Invalid JSON format"));
                     output.println(errorResponse);
                     output.flush(); // Ensure the error response is sent
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
             }
-        } catch (IOException | SQLException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("IO Exception: " + e.getMessage());
         } finally {
+            // Clean up resources
             try {
-                socket.close();
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("Failed to close socket: " + e.getMessage());
             }
         }
+    }
+
+    private boolean isEmailRegistered(String email) throws SQLException {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "SELECT COUNT(*) FROM users WHERE email = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean checkLogin(String email, String password) throws SQLException {
@@ -215,22 +248,6 @@ public class ServerClientHandler implements Runnable {
         return users;
     }
 
-    private String getUsername(String email) {
-        Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "SELECT username FROM users WHERE email = ?";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, email);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return resultSet.getString("username");
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return "Player";
-    }
-
     private String getUserStatus(String invitedUsername) {
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "SELECT status FROM users WHERE username = ?";
@@ -245,5 +262,28 @@ public class ServerClientHandler implements Runnable {
             e.printStackTrace();
         }
         return "offline";
+    }
+    private String getUsername(String email) {
+        String username = "Player"; // Default value
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = DatabaseConnectionManager.getConnection();
+            String query = "SELECT username FROM users WHERE email = ?"; // Use = for comparison
+            statement = connection.prepareStatement(query);
+            statement.setString(1, email);
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                username = resultSet.getString("username");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return username;
     }
 }

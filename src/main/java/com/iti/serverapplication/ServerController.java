@@ -46,20 +46,22 @@ public class ServerController implements Initializable {
     private ServerSocket serverSocket;
     private Thread serverThread;
     private ScheduledExecutorService scheduler;
+    private boolean isServerOnline = false; // Flag to track server status
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        stopServerBtn.setVisible(false);
+        pieChart.setTitle("User Status");
+        pieChart.setVisible(false);
         statusText.setTextFill(Color.RED);
         statusText.setText("Offline");
-        pieChart.setTitle("User Status");
-        startPieChartUpdates();
-        pieChart.setVisible(false);
+        startPieChartUpdates(); // Ensure updates start on initialization
     }
 
     private void startPieChartUpdates() {
-        scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(this::updatePieChart, 0, 5, TimeUnit.SECONDS);
+        if (scheduler == null || scheduler.isShutdown()) {
+            scheduler = Executors.newScheduledThreadPool(1);
+            scheduler.scheduleAtFixedRate(this::updatePieChart, 0, 5, TimeUnit.SECONDS);
+        }
     }
 
     private void stopPieChartUpdates() {
@@ -69,27 +71,29 @@ public class ServerController implements Initializable {
     }
 
     private void updatePieChart() {
-        List<PieChart.Data> pieChartData = new ArrayList<>();
+        if (isServerOnline) { // Only update if the server is online
+            List<PieChart.Data> pieChartData = new ArrayList<>();
 
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "new_password");
-             PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
-             ResultSet resultSet = preparedStatement.executeQuery()) {
+            try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+                 PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
+                 ResultSet resultSet = preparedStatement.executeQuery()) {
 
-            while (resultSet.next()) {
-                String status = resultSet.getString("status");
-                int count = resultSet.getInt("count");
-                pieChartData.add(new PieChart.Data(status, count));
+                while (resultSet.next()) {
+                    String status = resultSet.getString("status");
+                    int count = resultSet.getInt("count");
+                    pieChartData.add(new PieChart.Data(status, count));
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+            // Update on JavaFX Application Thread
+            Platform.runLater(() -> {
+                pieChart.getData().clear(); // Clear existing data
+                pieChart.getData().addAll(pieChartData);
+            });
         }
-
-        // Update on JavaFX Application Thread
-        Platform.runLater(() -> {
-            pieChart.getData().clear(); // Clear existing data
-            pieChart.getData().addAll(pieChartData);
-        });
     }
 
     public void startServer(ActionEvent ae) {
@@ -116,6 +120,8 @@ public class ServerController implements Initializable {
             });
             serverThread.start();
             pieChart.setVisible(true);
+            isServerOnline = true; // Set server status to online
+            updatePieChart(); // Ensure chart is updated when server starts
             setAllUsersOffline();
             stopServerBtn.setVisible(true);
             startServerBtn.setVisible(false);
@@ -123,7 +129,6 @@ public class ServerController implements Initializable {
             statusText.setText("Online");
             portField.setDisable(true);
             showAlert(Alert.AlertType.CONFIRMATION, "Server Started", "Server started successfully");
-            updatePieChart();
         } catch (SQLException e) {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "Database connection failed");
             e.printStackTrace();
@@ -155,7 +160,9 @@ public class ServerController implements Initializable {
             showAlert(Alert.AlertType.ERROR, "Failed to stop server", "Error occurred while stopping the server");
             e.printStackTrace();
         }
-
+        stopPieChartUpdates(); // Ensure updates are stopped
+        pieChart.getData().clear(); // Clear the chart data
+        isServerOnline = false; // Set server status to offline
         stopServerBtn.setVisible(false);
         startServerBtn.setVisible(true);
         statusText.setTextFill(Color.RED);
@@ -169,8 +176,8 @@ public class ServerController implements Initializable {
 
     public void stopServer(ActionEvent ae) {
         setServerStopped();
-        updatePieChart();
-        stopPieChartUpdates();
+        // Reinitialize pie chart updates to ensure it's rescheduled properly
+        startPieChartUpdates();
     }
 
     public void exit(ActionEvent ae) {
@@ -189,7 +196,7 @@ public class ServerController implements Initializable {
     }
 
     public void setAllUsersOffline() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "new_password");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
              PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
