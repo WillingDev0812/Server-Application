@@ -17,6 +17,11 @@ public class HelloApplication extends Application {
         stage.setScene(scene);
         stage.show();
     }
+    @Override
+    public void stop() throws Exception {
+        System.out.println("Stop() method: current Thread: " + Thread.currentThread().getName());
+        super.stop();
+    }
 
     public static void main(String[] args) {
         launch();
