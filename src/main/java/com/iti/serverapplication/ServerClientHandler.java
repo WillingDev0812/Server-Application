@@ -2,6 +2,7 @@ package com.iti.serverapplication;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.annotations.SerializedName;
 
 import java.io.*;
 import java.net.Socket;
@@ -9,6 +10,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static com.iti.serverapplication.ServerController.sockets;
 
 public class ServerClientHandler implements Runnable {
     private final Socket socket;
@@ -90,6 +93,7 @@ public class ServerClientHandler implements Runnable {
                     String responseJson;
                     switch (action) {
                         case "login" -> {
+                            System.out.println("the sockets = " +sockets.size());
                             System.out.println("Login");
                             LoginRequest loginRequest = gson.fromJson(requestJson, LoginRequest.class);
                             boolean success = checkLogin(loginRequest.email, loginRequest.password);
