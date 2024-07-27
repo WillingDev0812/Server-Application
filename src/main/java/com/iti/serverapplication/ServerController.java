@@ -52,6 +52,7 @@ public class ServerController implements Initializable {
         statusText.setText("Offline");
         pieChart.setTitle("User Status");
         startPieChartUpdates();
+        pieChart.setVisible(false);
     }
 
     private void startPieChartUpdates() {
@@ -110,7 +111,7 @@ public class ServerController implements Initializable {
                 }
             });
             serverThread.start();
-
+            pieChart.setVisible(true);
             setAllUsersOffline();
             stopServerBtn.setVisible(true);
             startServerBtn.setVisible(false);
