@@ -111,8 +111,9 @@ public class ServerClientHandler implements Runnable {
                         case "signup" -> {
                             System.out.println("Signup");
                             SignupRequest signupRequest = gson.fromJson(requestJson, SignupRequest.class);
-                            boolean success = registerUser(signupRequest.username, signupRequest.email, signupRequest.password);
-                            responseJson = gson.toJson(new GenericResponse(success, success ? "Signup successful" : "Signup failed"));
+                            String[] response = new String[1];
+                            boolean success = registerUser(signupRequest.username, signupRequest.email, signupRequest.password,response);
+                            responseJson = gson.toJson(new GenericResponse(success, success ? "Signup successful" : response[0]));
                         }
 
                         case "showUsers" -> {
@@ -169,7 +170,7 @@ public class ServerClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.err.println("IO Exception: " + e.getMessage());
+            System.err.println("Signout Exception: " + e.getMessage());
         } finally {
             // Clean up resources
             try {
@@ -219,7 +220,12 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
-    private boolean registerUser(String username, String email, String password) throws SQLException {
+    private boolean registerUser(String username, String email, String password,String[] response) throws SQLException {
+        if(isEmailRegistered(email))
+        {
+            response[0] = "email already exists";
+            return false;
+        }
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "INSERT INTO users (username, email, password, status) VALUES (?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -228,6 +234,11 @@ public class ServerClientHandler implements Runnable {
             statement.setString(3, password);
             statement.setString(4, "offline");
             return statement.executeUpdate() > 0;
+        }
+        catch (java.sql.SQLIntegrityConstraintViolationException e)
+        {
+            response[0] = "username already exists";
+            return false;
         }
     }
 

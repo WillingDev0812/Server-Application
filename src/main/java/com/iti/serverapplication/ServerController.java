@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -114,7 +115,8 @@ public class ServerController implements Initializable {
                     }
                 } catch (SocketException e) {
                     System.out.println("Server socket closed, stopping server thread.");
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     e.printStackTrace();
                 }
             });
@@ -140,29 +142,50 @@ public class ServerController implements Initializable {
 
     private void setServerStopped() {
         try {
-            setAllUsersOffline();
+            // Notify all connected clients that the server is stopping
+            for (Socket socket : sockets) {
+                if (!socket.isClosed()) {
+                    PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                    pw.println("SERVER_STOPPED");
+                    pw.flush();
+                }
+            }
+
+            // Close all client sockets
             for (Socket socket : sockets) {
                 if (!socket.isClosed()) {
                     socket.close();
                 }
             }
             sockets.clear();
+
+            // Close the server socket
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
+
+            // Interrupt server thread
             if (serverThread != null) {
                 serverThread.interrupt();
             }
+
+            // Disconnect from the database
             DatabaseConnectionManager.disconnect();
+
+            // Update the server UI
             showAlert(Alert.AlertType.CONFIRMATION, "Server Stopped", "Server stopped");
 
         } catch (SQLException | IOException e) {
             showAlert(Alert.AlertType.ERROR, "Failed to stop server", "Error occurred while stopping the server");
             e.printStackTrace();
         }
-        stopPieChartUpdates(); // Ensure updates are stopped
-        pieChart.getData().clear(); // Clear the chart data
-        isServerOnline = false; // Set server status to offline
+
+        // Stop updating the pie chart and clear data
+        stopPieChartUpdates();
+        pieChart.getData().clear();
+
+        // Update server status in the UI
+        isServerOnline = false;
         stopServerBtn.setVisible(false);
         startServerBtn.setVisible(true);
         statusText.setTextFill(Color.RED);
