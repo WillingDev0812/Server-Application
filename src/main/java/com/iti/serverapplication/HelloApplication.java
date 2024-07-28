@@ -13,9 +13,14 @@ public class HelloApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("/com/iti/serverapplication/Server.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
         stage.setFullScreen(false);
-        stage.setTitle("Server Application");
+        stage.setTitle("Server ");
         stage.setScene(scene);
         stage.show();
+    }
+    @Override
+    public void stop() throws Exception {
+        System.out.println("Stop() method: current Thread: " + Thread.currentThread().getName());
+        super.stop();
     }
 
     public static void main(String[] args) {

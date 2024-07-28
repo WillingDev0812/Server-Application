@@ -1,6 +1,8 @@
 package com.iti.serverapplication;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
@@ -11,9 +13,16 @@ import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.net.URL;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class ServerController implements Initializable {
@@ -30,13 +39,61 @@ public class ServerController implements Initializable {
     @FXML
     private Label statusText;
 
+    @FXML
+    private PieChart pieChart;
+
+    public static List<Socket> sockets = new ArrayList<>();
     private ServerSocket serverSocket;
+    private Thread serverThread;
+    private ScheduledExecutorService scheduler;
+    private boolean isServerOnline = false; // Flag to track server status
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        stopServerBtn.setVisible(false);
+        pieChart.setTitle("User Status");
+        pieChart.setVisible(false);
         statusText.setTextFill(Color.RED);
         statusText.setText("Offline");
+        startPieChartUpdates(); // Ensure updates start on initialization
+    }
+
+    private void startPieChartUpdates() {
+        if (scheduler == null || scheduler.isShutdown()) {
+            scheduler = Executors.newScheduledThreadPool(1);
+            scheduler.scheduleAtFixedRate(this::updatePieChart, 0, 5, TimeUnit.SECONDS);
+        }
+    }
+
+    private void stopPieChartUpdates() {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+        }
+    }
+
+    private void updatePieChart() {
+        if (isServerOnline) { // Only update if the server is online
+            List<PieChart.Data> pieChartData = new ArrayList<>();
+
+            try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+                 PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
+                 ResultSet resultSet = preparedStatement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    String status = resultSet.getString("status");
+                    int count = resultSet.getInt("count");
+                    pieChartData.add(new PieChart.Data(status, count));
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            // Update on JavaFX Application Thread
+            Platform.runLater(() -> {
+                pieChart.getData().clear(); // Clear existing data
+                pieChart.getData().addAll(pieChartData);
+            });
+        }
     }
 
     public void startServer(ActionEvent ae) {
@@ -44,31 +101,34 @@ public class ServerController implements Initializable {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "The port number is not valid");
             return;
         }
-
         int port = Integer.parseInt(portField.getText());
-
         try {
             DatabaseConnectionManager.connect();
             serverSocket = new ServerSocket(port);
-            new Thread(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        new Thread(new ServerClientHandler(serverSocket.accept())).start();
-                    } catch (IOException e) {
-                        if (!serverSocket.isClosed()) {
-                            e.printStackTrace();
-                        }
+            serverThread = new Thread(() -> {
+                try {
+                    while (!serverSocket.isClosed()) {
+                        Socket clientSocket = serverSocket.accept();
+                        sockets.add(clientSocket);
+                        new Thread(new ServerClientHandler(clientSocket)).start();
                     }
+                } catch (SocketException e) {
+                    System.out.println("Server socket closed, stopping server thread.");
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            }).start();
-
+            });
+            serverThread.start();
+            pieChart.setVisible(true);
+            isServerOnline = true; // Set server status to online
+            updatePieChart(); // Ensure chart is updated when server starts
+            setAllUsersOffline();
             stopServerBtn.setVisible(true);
             startServerBtn.setVisible(false);
             statusText.setTextFill(Color.GREEN);
             statusText.setText("Online");
             portField.setDisable(true);
             showAlert(Alert.AlertType.CONFIRMATION, "Server Started", "Server started successfully");
-
         } catch (SQLException e) {
             showAlert(Alert.AlertType.ERROR, "Server Failed to start", "Database connection failed");
             e.printStackTrace();
@@ -80,8 +140,18 @@ public class ServerController implements Initializable {
 
     private void setServerStopped() {
         try {
+            setAllUsersOffline();
+            for (Socket socket : sockets) {
+                if (!socket.isClosed()) {
+                    socket.close();
+                }
+            }
+            sockets.clear();
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
+            }
+            if (serverThread != null) {
+                serverThread.interrupt();
             }
             DatabaseConnectionManager.disconnect();
             showAlert(Alert.AlertType.CONFIRMATION, "Server Stopped", "Server stopped");
@@ -90,7 +160,9 @@ public class ServerController implements Initializable {
             showAlert(Alert.AlertType.ERROR, "Failed to stop server", "Error occurred while stopping the server");
             e.printStackTrace();
         }
-
+        stopPieChartUpdates(); // Ensure updates are stopped
+        pieChart.getData().clear(); // Clear the chart data
+        isServerOnline = false; // Set server status to offline
         stopServerBtn.setVisible(false);
         startServerBtn.setVisible(true);
         statusText.setTextFill(Color.RED);
@@ -98,19 +170,19 @@ public class ServerController implements Initializable {
         portField.setDisable(false);
     }
 
-
     private boolean isValidPort(String port) {
         return Pattern.matches("^[0-9]{1,5}$", port) && Integer.parseInt(port) <= 65535;
     }
 
-
-
     public void stopServer(ActionEvent ae) {
         setServerStopped();
+        // Reinitialize pie chart updates to ensure it's rescheduled properly
+        startPieChartUpdates();
     }
 
     public void exit(ActionEvent ae) {
         setServerStopped();
+        stopPieChartUpdates();
         System.exit(0);
     }
 
@@ -121,5 +193,14 @@ public class ServerController implements Initializable {
         alert.setResizable(true);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    public void setAllUsersOffline() {
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+             PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
