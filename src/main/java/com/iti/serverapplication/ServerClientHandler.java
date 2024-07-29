@@ -93,7 +93,6 @@ public class ServerClientHandler implements Runnable {
                     String responseJson;
                     switch (action) {
                         case "login" -> {
-
                             LoginRequest loginRequest = gson.fromJson(requestJson, LoginRequest.class);
                             boolean isRegistered = isEmailRegistered(loginRequest.email);
                             if (!isRegistered) {
@@ -128,6 +127,11 @@ public class ServerClientHandler implements Runnable {
                             String email = (String) requestMap.get("email");
                             boolean success = updateStatus(email, "offline");
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to offline" : "Failed to update status"));
+                            if (success) {
+                                removeSocket(socket);
+                            }
+                            System.out.println("Sockets size after sign out: " + sockets.size());
+                            System.out.println("Signed Out");
                         }
 
                         case "invite" -> {
@@ -172,7 +176,7 @@ public class ServerClientHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Signout Exception: " + e.getMessage());
+            System.err.println( e.getMessage());
         } finally {
             // Clean up resources
             try {
@@ -284,16 +288,7 @@ public class ServerClientHandler implements Runnable {
             e.printStackTrace();
         }
     }
-    public static void setAllUsersOffline2() {
-        Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "UPDATE users SET status = ?";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, "offline");
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+
     private String getUsername(String email) {
         String username = "Player"; // Default value
         Connection connection = null;
@@ -316,5 +311,16 @@ public class ServerClientHandler implements Runnable {
             e.printStackTrace();
         }
         return username;
+    }
+
+    private void removeSocket(Socket socket) {
+        sockets.remove(socket);
+        try {
+            if (!socket.isClosed()) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
