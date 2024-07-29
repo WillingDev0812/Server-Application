@@ -46,7 +46,7 @@ public class ServerController implements Initializable {
     private PieChart pieChart;
 
     public static List<Socket> sockets = new ArrayList<>();
-    private ServerSocket serverSocket;
+    public static ServerSocket serverSocket;
     private Thread serverThread;
     private ScheduledExecutorService scheduler;
     private boolean isServerOnline = false; // Flag to track server status
@@ -59,6 +59,15 @@ public class ServerController implements Initializable {
         statusText.setTextFill(Color.RED);
         statusText.setText("Offline");
         startPieChartUpdates(); // Ensure updates start on initialization
+    }
+
+    public synchronized void addSocket(Socket socket) {
+        if (socket != null && !sockets.contains(socket)) {
+            sockets.add(socket);
+        }
+    }
+    public synchronized void removeSocket(Socket socket) {
+        sockets.remove(socket);
     }
 
     private void startPieChartUpdates() {
@@ -115,7 +124,7 @@ public class ServerController implements Initializable {
                 try {
                     while (!serverSocket.isClosed()) {
                         Socket clientSocket = serverSocket.accept();
-                        sockets.add(clientSocket);
+                        //sockets.add(clientSocket);
                         new Thread(new ServerClientHandler(clientSocket)).start();
                     }
                 } catch (SocketException e) {

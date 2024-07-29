@@ -93,8 +93,7 @@ public class ServerClientHandler implements Runnable {
                     String responseJson;
                     switch (action) {
                         case "login" -> {
-                            System.out.println("the sockets = " +sockets.size());
-                            System.out.println("Login");
+
                             LoginRequest loginRequest = gson.fromJson(requestJson, LoginRequest.class);
                             boolean isRegistered = isEmailRegistered(loginRequest.email);
                             if (!isRegistered) {
@@ -103,9 +102,12 @@ public class ServerClientHandler implements Runnable {
                                 boolean success = checkLogin(loginRequest.email, loginRequest.password);
                                 if (success) {
                                     updateStatus(loginRequest.email, "online");
+                                    sockets.add(socket);
                                 }
                                 responseJson = gson.toJson(new GenericResponse(success, success ? "Login successful" : "Login failed"));
                             }
+                            System.out.println("the sockets = " +sockets.size());
+                            System.out.println("Login");
                         }
 
                         case "signup" -> {
