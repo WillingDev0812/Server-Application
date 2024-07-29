@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -152,7 +153,9 @@ public class ServerController implements Initializable {
             setAllUsersOffline();
             for (Socket socket : sockets) {
                 if (!socket.isClosed()) {
-                    socket.close();
+                    PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                    pw.println("SERVER_STOPPED");
+                    pw.flush();
                 }
             }
             sockets.clear();
