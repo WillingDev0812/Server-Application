@@ -274,6 +274,24 @@ public class ServerClientHandler implements Runnable {
         }
         return "offline";
     }
+    public static void setAllUsersOffline() {
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+             PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void setAllUsersOffline2() {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "UPDATE users SET status = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, "offline");
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
     private String getUsername(String email) {
         String username = "Player"; // Default value
         Connection connection = null;

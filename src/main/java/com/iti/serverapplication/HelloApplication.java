@@ -7,6 +7,8 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+import static com.iti.serverapplication.ServerClientHandler.setAllUsersOffline;
+
 public class HelloApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
@@ -19,7 +21,7 @@ public class HelloApplication extends Application {
     }
     @Override
     public void stop() throws Exception {
-        System.out.println("Stop() method: current Thread: " + Thread.currentThread().getName());
+        setAllUsersOffline();
         super.stop();
     }
 

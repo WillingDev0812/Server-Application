@@ -5,7 +5,9 @@
     -fx-background-radius: 30px;
     -fx-border-radius: 50px;
 }
-
+.pie-chart .chart-label {
+    -fx-text-fill: white; /* Text color for pie chart labels */
+}
 .containervbox{
     -fx-background-color:rgba(0,0,0,0.4);
     -fx-background-radius: 20;

@@ -87,7 +87,7 @@
             </HBox>
             <FlowPane alignment="CENTER" columnHalignment="CENTER" hgap="100.0" prefHeight="374.0" prefWidth="800.0" styleClass="player_data">
                <children>
-                  <PieChart fx:id="pieChart" />
+                  <PieChart fx:id="pieChart" stylesheets="@server.css" styleClass="chart-label"/>
                </children></FlowPane>
          </children>
          <padding>
