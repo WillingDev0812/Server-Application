@@ -153,6 +153,7 @@ public class ServerClientHandler implements Runnable {
                             }
                         }
                         case "getUsername" -> {
+                            output.println("getUsername");
                             String email = (String) requestMap.get("email");
                             String username = getUsername(email);
                             responseJson = gson.toJson(new GenericResponse(true, username));
