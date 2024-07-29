@@ -18,9 +18,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +42,7 @@ public class ServerController implements Initializable {
 
     @FXML
     private PieChart pieChart;
-
+    public static Map<Socket,String> ss =new HashMap<>(); ;
     public static List<Socket> sockets = new ArrayList<>();
     public static ServerSocket serverSocket;
     private Thread serverThread;
@@ -63,7 +61,7 @@ public class ServerController implements Initializable {
 
     public synchronized void addSocket(Socket socket) {
         if (socket != null && !sockets.contains(socket)) {
-            sockets.add(socket);
+            //sockets.add(socket);
         }
     }
     public synchronized void removeSocket(Socket socket) {
@@ -87,7 +85,7 @@ public class ServerController implements Initializable {
         if (isServerOnline) { // Only update if the server is online
             List<PieChart.Data> pieChartData = new ArrayList<>();
 
-            try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+            try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "قخخف");
                  PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
                  ResultSet resultSet = preparedStatement.executeQuery()) {
 
@@ -125,6 +123,7 @@ public class ServerController implements Initializable {
                     while (!serverSocket.isClosed()) {
                         Socket clientSocket = serverSocket.accept();
                         //sockets.add(clientSocket);
+                       // ss.put("gg",clientSocket);
                         new Thread(new ServerClientHandler(clientSocket)).start();
                     }
                 } catch (SocketException e) {
@@ -167,7 +166,15 @@ public class ServerController implements Initializable {
                     pw.flush();
                 }
             }
+            //nfs eli fu2 bs hashmap
+//            for (Socket socket : ss.keySet()) {
+//                if (!socket.isClosed()) {
+//                    PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+//                    pw.flush();
+//                }
+//            }
             sockets.clear();
+            ss.clear();
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }

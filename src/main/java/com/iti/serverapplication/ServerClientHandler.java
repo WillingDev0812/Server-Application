@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.iti.serverapplication.ServerController.sockets;
+import static com.iti.serverapplication.ServerController.ss;
 
 public class ServerClientHandler implements Runnable {
     private final Socket socket;
@@ -101,7 +102,10 @@ public class ServerClientHandler implements Runnable {
                                 boolean success = checkLogin(loginRequest.email, loginRequest.password);
                                 if (success) {
                                     updateStatus(loginRequest.email, "online");
-                                    sockets.add(socket);
+                                  sockets.add(socket);
+                                  String socketUserName=  getUsername(loginRequest.email);
+                                    ss.put(socket,socketUserName);
+                                    System.out.println("the map socket "+ss);
                                 }
                                 responseJson = gson.toJson(new GenericResponse(success, success ? "Login successful" : "Login failed"));
                             }
@@ -135,21 +139,21 @@ public class ServerClientHandler implements Runnable {
                         }
 
                         case "invite" -> {
-                            for(Socket s : sockets)
-                                System.out.println("the sockets when invite = " +s);
-                            System.out.println("the sockets when invite = " +sockets.size());
+//                            for(Socket s : sockets)
+//                                System.out.println("the sockets when invite = " +s);
+                            //System.out.println("the sockets when invite = " +sockets.size());
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
                             System.out.println("Invited status: " + invitedStatus);
-                            if(invitedStatus.equals("offline"))
+                            if(invitedStatus.equals("offline")) {
                                 responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
+                            }
                             else if (invitedStatus.equals("ingame"))
                                 responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
                             else {    //case online
-                                responseJson = gson.toJson(new GenericResponse(true, "invite sent "));
-                                for(Socket s : sockets){
-
-                                }
+                                responseJson = gson.toJson(new GenericResponse(true, "online"));
+                                System.out.println("inviteee serverrrrrrrr  "+inviteRequest.invitedUsername);
+                                intvitedUser(inviteRequest.invitedUsername.toString());
                             }
                         }
                         case "getUsername" -> {
@@ -189,6 +193,18 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
+   private void intvitedUser(String username) throws IOException {
+       for (Socket socket : ss.keySet()) {
+        //   if(ss.get(socket)==username) {
+               PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+               pw.println("INVITE");
+               pw.flush();
+         //  }
+       }
+
+
+   }
+
 
     private boolean isEmailRegistered(String email) throws SQLException {
         Connection connection = DatabaseConnectionManager.getConnection();
@@ -282,7 +298,7 @@ public class ServerClientHandler implements Runnable {
         return "offline";
     }
     public static void setAllUsersOffline() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "قخخف");
              PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
