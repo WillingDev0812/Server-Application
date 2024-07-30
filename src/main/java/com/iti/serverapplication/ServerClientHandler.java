@@ -159,6 +159,10 @@ public class ServerClientHandler implements Runnable {
 
                         case "invite" -> {
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
+                            String[] parts = inviteRequest.username .split(" ", 2); // Split into at most 3 parts
+                            int score1 = getScore(parts[1]);
+                            int score2 = getScore(inviteRequest.invitedUsername);
+                            System.out.println("Score1: " + score1 + " Score2: " + score2);
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
                             //int score2 = getScore(inviteRequest.username);
                             //System.out.println("AWEL SCORE" + score2);
@@ -309,7 +313,8 @@ public class ServerClientHandler implements Runnable {
     private int getScore(String username)
     {
         Connection connection = DatabaseConnectionManager.getConnection();
-        String query = "SELECT score from users WHERE username = ?";
+        System.out.println(username + "/////////////////////////////////////////////////////////////////////");
+        String query = "SELECT score FROM users WHERE username = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, username);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -318,7 +323,7 @@ public class ServerClientHandler implements Runnable {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return -1;
     }
