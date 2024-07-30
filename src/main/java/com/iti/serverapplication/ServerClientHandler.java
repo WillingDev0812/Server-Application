@@ -65,7 +65,6 @@ public class ServerClientHandler implements Runnable {
         private String invitedUsername;
         @SerializedName("player1")
         private String username;
-
         // Getters and Setters
     }
 
@@ -161,6 +160,8 @@ public class ServerClientHandler implements Runnable {
                         case "invite" -> {
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
+                            //int score2 = getScore(inviteRequest.username);
+                            //System.out.println("AWEL SCORE" + score2);
                             System.out.println("a7aaaaaaaaa"+inviteRequest.username);
                             System.out.println("Invited status: " + invitedStatus);
                             if(invitedStatus.equals("offline")) {
@@ -172,6 +173,8 @@ public class ServerClientHandler implements Runnable {
                                 responseJson = gson.toJson(new GenericResponse(true, "online"));
                                 System.out.println("inviteee serverrrrrrrr  "+inviteRequest.invitedUsername);
                                 System.out.println("username" +inviteRequest.username);
+                                //int score1 = getScore(inviteRequest.invitedUsername);
+                                //invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username,score2,score1);
                                 invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username);
                             }
                             output.println(responseJson);
@@ -210,7 +213,8 @@ public class ServerClientHandler implements Runnable {
             }
         } catch (IOException e) {
             System.err.println( e.getMessage());
-        } finally {
+        }
+        finally {
             // Clean up resources
             try {
                 if (socket != null && !socket.isClosed()) {
@@ -222,6 +226,7 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
+    //private void invitedUser(String user,String username,int score2,int score1) throws IOException {
     private void invitedUser(String user,String username) throws IOException {
         for (Socket socket : ss.keySet()) {
             System.out.println("the socket is ==== " +ss.get(socket));
@@ -229,6 +234,8 @@ public class ServerClientHandler implements Runnable {
                 System.out.println("invited the userrrrrrrrrr gg ");
                 PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
                 System.out.println("USERNAME INVITTE: ");
+                //System.out.println(score1 + "Score2" + score2);
+                //pw.println("INVITE " + username + " " + score2 + " " + score1);
                 pw.println("INVITE " + username);
                 pw.flush();
             }
@@ -286,6 +293,22 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
+    private int getScore(String username)
+    {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "SELECT score from users WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, username);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt("score");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
     private boolean registerUser(String username, String email, String password,String[] response) throws SQLException {
         if(isEmailRegistered(email))
         {
