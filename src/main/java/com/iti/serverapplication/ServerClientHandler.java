@@ -190,6 +190,9 @@ public class ServerClientHandler implements Runnable {
                         }
                         case "INVITE_ACCEPTED" -> {
                             InviteResponse inviteResponse = gson.fromJson(requestJson, InviteResponse.class);
+                            //set2UsersStatusInGame(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
+                            setUserStatusInGame(inviteResponse.invitedUsername);
+                            setUserStatusInGame(inviteResponse.invitedUsername2);
                             acceptInvite(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
                         }
                         default -> {
@@ -240,8 +243,18 @@ public class ServerClientHandler implements Runnable {
                 pw.flush();
             }
         }
-
-
+    }
+    private void setUserStatusInGame(String player1)
+    {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "UPDATE users SET status = ? WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, "ingame");
+            statement.setString(2, player1);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
     private void acceptInvite(String user,String user2) throws IOException {
         for (Socket socket : ss.keySet()) {
