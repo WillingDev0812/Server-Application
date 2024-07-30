@@ -10,6 +10,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.iti.serverapplication.ServerController.sockets;
 import static com.iti.serverapplication.ServerController.ss;
@@ -153,7 +154,7 @@ public class ServerClientHandler implements Runnable {
                             else {    //case online
                                 responseJson = gson.toJson(new GenericResponse(true, "online"));
                                 System.out.println("inviteee serverrrrrrrr  "+inviteRequest.invitedUsername);
-                                intvitedUser(inviteRequest.invitedUsername.toString());
+                                invitedUser(inviteRequest.invitedUsername.toString());
                             }
                         }
                         case "getUsername" -> {
@@ -193,17 +194,20 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
-   private void intvitedUser(String username) throws IOException {
-       for (Socket socket : ss.keySet()) {
-        //   if(ss.get(socket)==username) {
-               PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-               pw.println("INVITE");
-               pw.flush();
-         //  }
-       }
+
+    private void invitedUser(String user) throws IOException {
+        for (Socket socket : ss.keySet()) {
+            System.out.println("the socket is ==== " +ss.get(socket));
+            if(Objects.equals(user, ss.get(socket))) {
+                System.out.println("invited the userrrrrrrrrr gg ");
+                PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                pw.println("INVITE");
+                pw.flush();
+            }
+        }
 
 
-   }
+    }
 
 
     private boolean isEmailRegistered(String email) throws SQLException {
@@ -298,7 +302,7 @@ public class ServerClientHandler implements Runnable {
         return "offline";
     }
     public static void setAllUsersOffline() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "قخخف");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
              PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
