@@ -63,9 +63,20 @@ public class ServerClientHandler implements Runnable {
         private String action;
         @SerializedName("player")
         private String invitedUsername;
+        @SerializedName("player1")
+        private String username;
+
         // Getters and Setters
     }
 
+    static class InviteResponse {
+        @SerializedName("action")
+        private String action;
+        @SerializedName("player")
+        private String invitedUsername;
+        @SerializedName("player2")
+        private String invitedUsername2;
+    }
     static class GenericResponse {
         private boolean success;
         private String message;
@@ -112,6 +123,8 @@ public class ServerClientHandler implements Runnable {
                             }
                             System.out.println("the sockets = " +sockets.size());
                             System.out.println("Login");
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
 
                         case "signup" -> {
@@ -120,12 +133,16 @@ public class ServerClientHandler implements Runnable {
                             String[] response = new String[1];
                             boolean success = registerUser(signupRequest.username, signupRequest.email, signupRequest.password,response);
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Signup successful" : response[0]));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
 
                         case "showUsers" -> {
                             ShowUsersRequest showUsersRequest = gson.fromJson(requestJson, ShowUsersRequest.class);
                             users = getUsers(showUsersRequest.email);
                             responseJson = gson.toJson(users);
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
 
                         case "offline" -> {
@@ -137,14 +154,14 @@ public class ServerClientHandler implements Runnable {
                             }
                             System.out.println("Sockets size after sign out: " + sockets.size());
                             System.out.println("Signed Out");
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
 
                         case "invite" -> {
-//                            for(Socket s : sockets)
-//                                System.out.println("the sockets when invite = " +s);
-                            //System.out.println("the sockets when invite = " +sockets.size());
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
+                            System.out.println("a7aaaaaaaaa"+inviteRequest.username);
                             System.out.println("Invited status: " + invitedStatus);
                             if(invitedStatus.equals("offline")) {
                                 responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
@@ -154,23 +171,33 @@ public class ServerClientHandler implements Runnable {
                             else {    //case online
                                 responseJson = gson.toJson(new GenericResponse(true, "online"));
                                 System.out.println("inviteee serverrrrrrrr  "+inviteRequest.invitedUsername);
-                                invitedUser(inviteRequest.invitedUsername.toString());
+                                System.out.println("username" +inviteRequest.username);
+                                invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username);
                             }
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
                         case "getUsername" -> {
                             output.println("getUsername");
                             String email = (String) requestMap.get("email");
                             String username = getUsername(email);
                             responseJson = gson.toJson(new GenericResponse(true, username));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
+                        }
+                        case "INVITE_ACCEPTED" -> {
+                            InviteResponse inviteResponse = gson.fromJson(requestJson, InviteResponse.class);
+                            acceptInvite(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
                         }
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
                     }
 
                     // Send the response
-                    output.println(responseJson);
-                    output.flush(); // Ensure the response is sent
+
 
                 } catch (JsonSyntaxException e) {
                     e.printStackTrace();
@@ -195,18 +222,30 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
-    private void invitedUser(String user) throws IOException {
+    private void invitedUser(String user,String username) throws IOException {
         for (Socket socket : ss.keySet()) {
             System.out.println("the socket is ==== " +ss.get(socket));
             if(Objects.equals(user, ss.get(socket))) {
                 System.out.println("invited the userrrrrrrrrr gg ");
                 PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                pw.println("INVITE");
+                System.out.println("USERNAME INVITTE: ");
+                pw.println("INVITE " + username);
                 pw.flush();
             }
         }
 
 
+    }
+    private void acceptInvite(String user,String user2) throws IOException {
+        for (Socket socket : ss.keySet()) {
+            System.out.println("the socket is ==== " +ss.get(socket));
+            if(Objects.equals(user, ss.get(socket))) {
+                System.out.println("invited the userrrrrrrrrr gg ");
+                PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                pw.println("TMAM " + user2);
+                pw.flush();
+            }
+        }
     }
 
 
