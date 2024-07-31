@@ -174,6 +174,13 @@ public class ServerClientHandler implements Runnable {
                             output.println(responseJson);
                             output.flush(); // Ensure the response is sent
                         }
+                        case "online" -> {
+                            String email = (String) requestMap.get("email");
+                            boolean success = updateStatus(email, "online");
+                            responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to offline" : "Failed to update status"));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
+                        }
 
                         case "offline" -> {
                             String email = (String) requestMap.get("email");
@@ -187,7 +194,6 @@ public class ServerClientHandler implements Runnable {
                             output.println(responseJson);
                             output.flush(); // Ensure the response is sent
                         }
-
                         case "invite" -> {
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
                             String[] parts = inviteRequest.username .split(" ", 2); // Split into at most 3 parts
@@ -252,8 +258,6 @@ public class ServerClientHandler implements Runnable {
                     }
 
                     // Send the response
-
-
                 } catch (JsonSyntaxException e) {
                     e.printStackTrace();
                     String errorResponse = gson.toJson(new GenericResponse(false, "Invalid JSON format"));
