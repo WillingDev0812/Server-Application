@@ -21,7 +21,7 @@
          <children>
             <HBox alignment="CENTER" prefHeight="72.0" prefWidth="800.0" styleClass="server-name">
                <children>
-                  <Text fill="WHITE" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="server-name" text="Neon Server ">
+                  <Text fill="WHITE" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="server-name" text="Server ">
                      <font>
                         <Font name="Comic Sans MS Bold" size="35.0" />
                      </font>
@@ -30,9 +30,9 @@
             </HBox>
             <HBox alignment="CENTER">
                <children>
-                  <Label prefWidth="202.0" text="Server Status:" textFill="WHITE">
+                  <Label prefHeight="76.0" prefWidth="232.0" text="Server Status:" textFill="WHITE">
                      <font>
-                        <Font name="System Bold" size="25.0" />
+                        <Font name="Comic Sans MS Bold" size="25.0" />
                      </font>
                      <padding>
                         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
@@ -45,9 +45,9 @@
                         </DropShadow>
                      </effect>
                   </Label>
-                  <Label fx:id="statusText" prefHeight="76.0" prefWidth="126.0" text="Offline" textFill="WHITE">
+                  <Label fx:id="statusText" prefHeight="76.0" prefWidth="164.0" text="Offline" textFill="WHITE">
                      <font>
-                        <Font name="System Bold" size="25.0" />
+                        <Font name="Comic Sans MS Bold" size="25.0" />
                      </font>
                      <padding>
                         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
@@ -62,12 +62,12 @@
                <children>
                   <TextField fx:id="portField" alignment="CENTER" prefHeight="46.0" prefWidth="194.0" promptText="Port Number" text="12345">
                      <font>
-                        <Font name="System Bold" size="21.0" />
+                        <Font name="Comic Sans MS Bold Italic" size="21.0" />
                      </font>
                   </TextField>
                   <Button fx:id="startServerBtn" defaultButton="true" minWidth="50.0" mnemonicParsing="false" onAction="#startServer" prefHeight="42.0" prefWidth="119.0" text="Start" textFill="WHITE">
                      <font>
-                        <Font name="System Bold" size="18.0" />
+                        <Font name="Comic Sans MS Bold" size="18.0" />
                      </font>
                      <effect>
                         <DropShadow />
@@ -75,19 +75,19 @@
                   </Button>
                   <Button fx:id="stopServerBtn" cancelButton="true" minWidth="50.0" mnemonicParsing="false" onAction="#stopServer" prefHeight="42.0" prefWidth="119.0" text="Stop" textFill="WHITE">
                      <font>
-                        <Font name="System Bold" size="18.0" />
+                        <Font name="Comic Sans MS Bold" size="19.0" />
                      </font>
                   </Button>
                   <Button fx:id="exitBtn" cancelButton="true" minWidth="50.0" mnemonicParsing="false" onAction="#exit" prefHeight="42.0" prefWidth="119.0" text="Exit" textFill="WHITE">
                      <font>
-                        <Font name="System Bold" size="18.0" />
+                        <Font name="Comic Sans MS Bold" size="18.0" />
                      </font>
                   </Button>
                </children>
             </HBox>
             <FlowPane alignment="CENTER" columnHalignment="CENTER" hgap="100.0" prefHeight="374.0" prefWidth="800.0" styleClass="player_data">
                <children>
-                  <PieChart fx:id="pieChart" stylesheets="@server.css" styleClass="chart-label"/>
+                  <PieChart fx:id="pieChart" styleClass="chart-label" stylesheets="@server.css" />
                </children></FlowPane>
          </children>
          <padding>
