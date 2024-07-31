@@ -185,7 +185,8 @@ public class ServerClientHandler implements Runnable {
                         case "exitgame" -> {
                             String email = (String) requestMap.get("email");
                             boolean success = updateStatus(email, "online");
-
+                            String email2 = (String) requestMap.get("email2");
+                            setuserOnline(email2);
                             // Construct response
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to online" : "Failed to update status"));
                             output.println(responseJson);
@@ -295,23 +296,41 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
-    private void notifyPlayersOfExit(String email) throws IOException {
-        String username = getUsername(email);
+    private void notifyPlayersOfExit(String username) throws IOException {
 
+        System.out.println("notifyyyyyyyyyyyyyyyyyyyyyyyyyyyy ");
+        setuserOnline(username);
         for (Socket socket : ss.keySet()) {
-            String player = ss.get(socket);
-
-            if (Objects.equals(player, username)) {
-                continue;
+            if (Objects.equals(username, ss.get(socket))) {
+                PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                pw.println("Quit");
+                pw.flush();
             }
-
-            PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-            pw.println("PLAYER_EXIT " + username);
-            pw.flush();
         }
-    }
 
-    private void setScore(String username,int score)
+//           String player = ss.get(socket);
+//
+//            if (Objects.equals(player, username)) {
+//                continue;
+//            }
+//
+//            PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+//            pw.println("PLAYER_EXIT " + username);
+//            pw.flush();
+//        }
+   }
+private void setuserOnline(String username){
+    Connection connection = DatabaseConnectionManager.getConnection();
+    String query = "UPDATE users SET status = ? WHERE username = ?";
+    try (PreparedStatement statement = connection.prepareStatement(query)) {
+        statement.setString(1, "online");
+        statement.setString(2, username);
+        statement.executeUpdate();
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+}
+        private void setScore(String username,int score)
     {
         Connection connection = DatabaseConnectionManager.getConnection();
         String query = "UPDATE users SET score = ? WHERE username = ?";
@@ -499,7 +518,7 @@ public class ServerClientHandler implements Runnable {
         return "offline";
     }
     public static void setAllUsersOffline() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "قخخف");
              PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
