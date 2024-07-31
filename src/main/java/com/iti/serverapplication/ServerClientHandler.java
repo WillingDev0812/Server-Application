@@ -157,6 +157,8 @@ public class ServerClientHandler implements Runnable {
                             String email = (String) requestMap.get("email");
                             boolean success = updateStatus(email, "online");
                             responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to offline" : "Failed to update status"));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
                         }
 
                         case "offline" -> {
@@ -170,18 +172,6 @@ public class ServerClientHandler implements Runnable {
                             System.out.println("Signed Out");
                             output.println(responseJson);
                             output.flush(); // Ensure the response is sent
-                        }
-                        case "exitgame" -> {
-                            String email = (String) requestMap.get("email");
-                            boolean success = updateStatus(email, "online");
-
-                            // Construct response
-                            responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to online" : "Failed to update status"));
-                            output.println(responseJson);
-                            output.flush(); // Ensure the response is sent
-
-                            // Notify other players in the same game session
-                            notifyPlayersOfExit(email);
                         }
                         case "invite" -> {
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
@@ -240,8 +230,6 @@ public class ServerClientHandler implements Runnable {
                     }
 
                     // Send the response
-
-
                 } catch (JsonSyntaxException e) {
                     e.printStackTrace();
                     String errorResponse = gson.toJson(new GenericResponse(false, "Invalid JSON format"));
@@ -265,24 +253,6 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
-
-    private void notifyPlayersOfExit(String email) throws IOException {
-        String username = getUsername(email);
-
-        for (Socket socket : ss.keySet()) {
-            String player = ss.get(socket);
-
-            if (Objects.equals(player, username)) {
-                continue;
-            }
-
-            PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-            pw.println("PLAYER_EXIT " + username);
-            pw.flush();
-        }
-    }
-
-
 
     private void gameSession(String user,String move) throws IOException {
         for (Socket socket : ss.keySet()) {
