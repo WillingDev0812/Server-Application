@@ -78,6 +78,13 @@ public class ServerClientHandler implements Runnable {
         // Getters and Setters
     }
 
+    static class IncrementScoreRequest {
+        private String action;
+        @SerializedName("username")
+        private String username;
+        @SerializedName("score")
+        private int score;
+    }
     static class InviteResponse {
         @SerializedName("action")
         private String action;
@@ -219,6 +226,10 @@ public class ServerClientHandler implements Runnable {
                             gameSession(gamemove.playerName,gamemove.mov);
                         }
 
+                        case "incrementScore" ->{
+                            IncrementScoreRequest incrementScoreRequest = gson.fromJson(requestJson, IncrementScoreRequest.class);
+                            setScore(incrementScoreRequest.username,incrementScoreRequest.score);
+                        }
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));
                             output.println(responseJson);
@@ -250,6 +261,19 @@ public class ServerClientHandler implements Runnable {
             } catch (IOException e) {
                 System.err.println("Failed to close socket: " + e.getMessage());
             }
+        }
+    }
+
+    private void setScore(String username,int score)
+    {
+        Connection connection = DatabaseConnectionManager.getConnection();
+        String query = "UPDATE users SET score = ? WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, score);
+            statement.setString(2, username);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
