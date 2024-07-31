@@ -67,6 +67,15 @@ public class ServerClientHandler implements Runnable {
         private String username;
         // Getters and Setters
     }
+    static class Gamemove {
+        private String action;
+        @SerializedName("player")
+        private String playerName;
+        @SerializedName("move")
+        private String mov;
+
+        // Getters and Setters
+    }
 
     static class InviteResponse {
         @SerializedName("action")
@@ -162,7 +171,6 @@ public class ServerClientHandler implements Runnable {
                             String invitedStatus = getUserStatus(inviteRequest.invitedUsername);
                             //int score2 = getScore(inviteRequest.username);
                             //System.out.println("AWEL SCORE" + score2);
-                            System.out.println("a7aaaaaaaaa"+inviteRequest.username);
                             System.out.println("Invited status: " + invitedStatus);
                             if(invitedStatus.equals("offline")) {
                                 responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
@@ -171,8 +179,6 @@ public class ServerClientHandler implements Runnable {
                                 responseJson = gson.toJson(new GenericResponse(true, invitedStatus));
                             else {    //case online
                                 responseJson = gson.toJson(new GenericResponse(true, "online"));
-                                System.out.println("inviteee serverrrrrrrr  "+inviteRequest.invitedUsername);
-                                System.out.println("username" +inviteRequest.username);
                                 //int score1 = getScore(inviteRequest.invitedUsername);
                                 //invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username,score2,score1);
                                 invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username);
@@ -194,6 +200,11 @@ public class ServerClientHandler implements Runnable {
                             setUserStatusInGame(inviteResponse.invitedUsername);
                             setUserStatusInGame(inviteResponse.invitedUsername2);
                             acceptInvite(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
+                        }
+                        case "PlayerMove" ->{
+                            Gamemove gamemove = gson.fromJson(requestJson, Gamemove.class);
+                            System.out.println(gamemove.playerName + " " + gamemove.mov);
+                            gameSession(gamemove.playerName,gamemove.mov);
                         }
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));
@@ -228,7 +239,16 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
-
+    private void gameSession(String user,String move) throws IOException {
+        for (Socket socket : ss.keySet()) {
+            if(Objects.equals(user, ss.get(socket))) {
+                PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                pw.println("PlayerMoved " + move);
+                pw.flush();
+                System.out.println("sentttttttttttttttttt");
+            }
+        }
+    }
     //private void invitedUser(String user,String username,int score2,int score1) throws IOException {
     private void invitedUser(String user,String username) throws IOException {
         for (Socket socket : ss.keySet()) {
@@ -377,7 +397,7 @@ public class ServerClientHandler implements Runnable {
         return "offline";
     }
     public static void setAllUsersOffline() {
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "قخخف");
              PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET status = 'offline'")) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
