@@ -189,7 +189,7 @@ public class ServerClientHandler implements Runnable {
                                 System.out.println("username" +inviteRequest.username);
                                 //int score1 = getScore(inviteRequest.invitedUsername);
                                 //invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username,score2,score1);
-                                invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username);
+                                invitedUser(inviteRequest.invitedUsername.toString(),inviteRequest.username,score1,score2);
                             }
                             output.println(responseJson);
                             output.flush(); // Ensure the response is sent
@@ -205,9 +205,12 @@ public class ServerClientHandler implements Runnable {
                         case "INVITE_ACCEPTED" -> {
                             InviteResponse inviteResponse = gson.fromJson(requestJson, InviteResponse.class);
                             //set2UsersStatusInGame(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
+                            System.out.println(inviteResponse.invitedUsername+"/////////////////"+inviteResponse.invitedUsername2);
+                            int score1 = getScore(inviteResponse.invitedUsername);
+                            int score2 = getScore(inviteResponse.invitedUsername2);
                             setUserStatusInGame(inviteResponse.invitedUsername);
                             setUserStatusInGame(inviteResponse.invitedUsername2);
-                            acceptInvite(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
+                            acceptInvite(inviteResponse.invitedUsername,inviteResponse.invitedUsername2,score1,score2);
                         }
 
                         case "PlayerMove" ->{
@@ -262,7 +265,7 @@ public class ServerClientHandler implements Runnable {
     }
 
     //private void invitedUser(String user,String username,int score2,int score1) throws IOException {
-    private void invitedUser(String user,String username) throws IOException {
+    private void invitedUser(String user,String username,int score1,int score2) throws IOException {
         for (Socket socket : ss.keySet()) {
             System.out.println("the socket is ==== " +ss.get(socket));
             if(Objects.equals(user, ss.get(socket))) {
@@ -271,7 +274,7 @@ public class ServerClientHandler implements Runnable {
                 System.out.println("USERNAME INVITTE: ");
                 //System.out.println(score1 + "Score2" + score2);
                 //pw.println("INVITE " + username + " " + score2 + " " + score1);
-                pw.println("INVITE " + username);
+                pw.println("INVITE " + username + " " + score1 + " " + score2);
                 pw.flush();
             }
         }
@@ -288,13 +291,13 @@ public class ServerClientHandler implements Runnable {
             throw new RuntimeException(e);
         }
     }
-    private void acceptInvite(String user,String user2) throws IOException {
+    private void acceptInvite(String user,String user2,int score1,int score2) throws IOException {
         for (Socket socket : ss.keySet()) {
             System.out.println("the socket is ==== " +ss.get(socket));
             if(Objects.equals(user, ss.get(socket))) {
                 System.out.println("invited the userrrrrrrrrr gg ");
                 PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                pw.println("TMAM " + user2);
+                pw.println("TMAM " + user2 + " " + score1 + " " + score2);
                 pw.flush();
             }
         }
