@@ -59,6 +59,16 @@ public class ServerClientHandler implements Runnable {
         // Getters and Setters
     }
 
+    static class Gamemove {
+        private String action;
+        @SerializedName("player")
+        private String playerName;
+        @SerializedName("move")
+        private String mov;
+
+        // Getters and Setters
+    }
+
     static class InviteRequest {
         private String action;
         @SerializedName("player")
@@ -199,6 +209,13 @@ public class ServerClientHandler implements Runnable {
                             setUserStatusInGame(inviteResponse.invitedUsername2);
                             acceptInvite(inviteResponse.invitedUsername,inviteResponse.invitedUsername2);
                         }
+
+                        case "PlayerMove" ->{
+                            Gamemove gamemove = gson.fromJson(requestJson, Gamemove.class);
+                            System.out.println(gamemove.playerName + " " + gamemove.mov);
+                            gameSession(gamemove.playerName,gamemove.mov);
+                        }
+
                         default -> {
                             responseJson = gson.toJson(new GenericResponse(false, "Invalid action"));
                             output.println(responseJson);
@@ -229,6 +246,17 @@ public class ServerClientHandler implements Runnable {
                 }
             } catch (IOException e) {
                 System.err.println("Failed to close socket: " + e.getMessage());
+            }
+        }
+    }
+
+    private void gameSession(String user,String move) throws IOException {
+        for (Socket socket : ss.keySet()) {
+            if(Objects.equals(user, ss.get(socket))) {
+                PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                pw.println("PlayerMoved " + move);
+                pw.flush();
+                System.out.println("sentttttttttttttttttt");
             }
         }
     }
