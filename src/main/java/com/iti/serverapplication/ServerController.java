@@ -71,7 +71,7 @@ public class ServerController implements Initializable {
     private void startPieChartUpdates() {
         if (scheduler == null || scheduler.isShutdown()) {
             scheduler = Executors.newScheduledThreadPool(1);
-            scheduler.scheduleAtFixedRate(this::updatePieChart, 0, 3, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(this::updatePieChart, 0, 2, TimeUnit.SECONDS);
         }
     }
 
@@ -85,7 +85,7 @@ public class ServerController implements Initializable {
         if (isServerOnline) { // Only update if the server is online
             List<PieChart.Data> pieChartData = new ArrayList<>();
 
-            try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "قخخف");
+            try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tictactoe", "root", "root");
                  PreparedStatement preparedStatement = connection.prepareStatement("SELECT status, COUNT(*) AS count FROM users GROUP BY status");
                  ResultSet resultSet = preparedStatement.executeQuery()) {
 
