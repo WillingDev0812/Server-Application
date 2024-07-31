@@ -153,6 +153,11 @@ public class ServerClientHandler implements Runnable {
                             output.println(responseJson);
                             output.flush(); // Ensure the response is sent
                         }
+                        case "online" -> {
+                            String email = (String) requestMap.get("email");
+                            boolean success = updateStatus(email, "online");
+                            responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to offline" : "Failed to update status"));
+                        }
 
                         case "offline" -> {
                             String email = (String) requestMap.get("email");
@@ -166,7 +171,18 @@ public class ServerClientHandler implements Runnable {
                             output.println(responseJson);
                             output.flush(); // Ensure the response is sent
                         }
+                        case "exitgame" -> {
+                            String email = (String) requestMap.get("email");
+                            boolean success = updateStatus(email, "online");
 
+                            // Construct response
+                            responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to online" : "Failed to update status"));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
+
+                            // Notify other players in the same game session
+                            notifyPlayersOfExit(email);
+                        }
                         case "invite" -> {
                             InviteRequest inviteRequest = gson.fromJson(requestJson, InviteRequest.class);
                             String[] parts = inviteRequest.username .split(" ", 2); // Split into at most 3 parts
@@ -249,6 +265,24 @@ public class ServerClientHandler implements Runnable {
             }
         }
     }
+
+    private void notifyPlayersOfExit(String email) throws IOException {
+        String username = getUsername(email);
+
+        for (Socket socket : ss.keySet()) {
+            String player = ss.get(socket);
+
+            if (Objects.equals(player, username)) {
+                continue;
+            }
+
+            PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+            pw.println("PLAYER_EXIT " + username);
+            pw.flush();
+        }
+    }
+
+
 
     private void gameSession(String user,String move) throws IOException {
         for (Socket socket : ss.keySet()) {
