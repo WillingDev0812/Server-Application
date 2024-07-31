@@ -182,6 +182,19 @@ public class ServerClientHandler implements Runnable {
                             output.flush(); // Ensure the response is sent
                         }
 
+                        case "exitgame" -> {
+                            String email = (String) requestMap.get("email");
+                            boolean success = updateStatus(email, "online");
+
+                            // Construct response
+                            responseJson = gson.toJson(new GenericResponse(success, success ? "Status updated to online" : "Failed to update status"));
+                            output.println(responseJson);
+                            output.flush(); // Ensure the response is sent
+
+                            // Notify other players in the same game session
+                            notifyPlayersOfExit(email);
+                        }
+
                         case "offline" -> {
                             String email = (String) requestMap.get("email");
                             boolean success = updateStatus(email, "offline");
@@ -279,6 +292,22 @@ public class ServerClientHandler implements Runnable {
             } catch (IOException e) {
                 System.err.println("Failed to close socket: " + e.getMessage());
             }
+        }
+    }
+
+    private void notifyPlayersOfExit(String email) throws IOException {
+        String username = getUsername(email);
+
+        for (Socket socket : ss.keySet()) {
+            String player = ss.get(socket);
+
+            if (Objects.equals(player, username)) {
+                continue;
+            }
+
+            PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+            pw.println("PLAYER_EXIT " + username);
+            pw.flush();
         }
     }
 
